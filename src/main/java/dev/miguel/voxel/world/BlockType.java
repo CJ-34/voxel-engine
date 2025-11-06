@@ -2,10 +2,12 @@ package dev.miguel.voxel.world;
 
 import dev.miguel.voxel.gfx.TextureAtlas;
 import dev.miguel.voxel.gfx.TextureRegion;
+import lombok.Getter;
 
+@Getter
 public enum BlockType {
     AIR(false, null, null, null),
-    GRASS(true, "grass_top", "grass_side", "grass_bottom"),
+    GRASS(true, "grass_top", "grass_side", "dirt"),
     DIRT(true, "dirt", "dirt", "dirt"),
     STONE(true, "stone", "stone", "stone");
 
@@ -30,7 +32,11 @@ public enum BlockType {
     }
 
     public TextureRegion getRegionForFace(Face face) {
-
+        return switch (face) {
+            case TOP -> topRegion;
+            case BOTTOM -> bottomRegion;
+            default -> sideRegion;
+        };
     }
 
     public enum Face {

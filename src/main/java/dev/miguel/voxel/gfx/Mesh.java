@@ -48,6 +48,7 @@ public class Mesh {
         offset += 3 * Float.BYTES;
         shader.enableVertexAttribute(normalLoc);
         shader.pointVertexAttribute(normalLoc, 3, stride, offset);
+        System.out.println("normalLoc: " + normalLoc);
 
         offset += 3 * Float.BYTES;
         shader.enableVertexAttribute(uvLoc);

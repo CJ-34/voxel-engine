@@ -14,7 +14,7 @@ public class Chunk {
         }
         for (int z = 0; z < D; z++) {
             for (int x = 0; x < W; x++) {
-                set(x, 47, z, BlockType.AIR);
+                set(x, 49, z, BlockType.AIR);
             }
         }
     }

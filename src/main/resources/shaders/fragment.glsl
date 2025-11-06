@@ -1,9 +1,12 @@
 #version 330
 
-in vec3 vertexColor;
+in vec2 oUV;
+in vec3 oNormal;
+
+uniform sampler2D atlas;
 
 out vec4 fragColor;
 
 void main() {
-    fragColor = vec4(vertexColor, 1.0);
+    fragColor = texture(atlas, oUV);
 }

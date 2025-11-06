@@ -1,8 +1,10 @@
 package dev.miguel.voxel.gfx;
 
+import dev.miguel.voxel.utils.FileUtils;
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryStack;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.HashMap;
@@ -23,9 +25,11 @@ public class TextureAtlas {
             IntBuffer h = stack.mallocInt(1);
             IntBuffer channels = stack.mallocInt(1);
 
-            STBImage.stbi_set_flip_vertically_on_load(true);
+            ByteBuffer imageBuffer = FileUtils.ioResourceToByteBuffer(path, 8 * 1024);
 
-            ByteBuffer data = STBImage.stbi_load(path, w, h, channels, 4);
+            STBImage.stbi_set_flip_vertically_on_load(false);
+
+            ByteBuffer data = STBImage.stbi_load_from_memory(imageBuffer, w, h, channels, 4);
             if (data == null)
                 throw new RuntimeException("Failed to load texture atlas at " + path);
 
@@ -39,11 +43,16 @@ public class TextureAtlas {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
+            System.out.println(id);
+
             STBImage.stbi_image_free(data);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
     public void bind() {
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, id);
     }
 

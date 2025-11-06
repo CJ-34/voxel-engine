@@ -34,6 +34,8 @@ public class Voxel {
 
     private static ShaderProgram program;
 
+    private static Renderer renderer;
+
     public static void update(float delta) {
         angle += delta * anglePerSecond;
     }
@@ -64,55 +66,27 @@ public class Voxel {
 
         glEnable(GL_DEPTH_TEST);
 
-        VertexArrayObject vao = new VertexArrayObject();
-        BufferObject vbo = new BufferObject();
-        BufferObject ebo = new BufferObject();
-
-        float[] vertices = {
-                -0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 0.0f,
-                -0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 0.0f,
-                0.5f, -0.5f,  0.5f,   0.0f, 0.0f, 1.0f,
-                0.5f,  0.5f,  0.5f,   1.0f, 1.0f, 0.0f,
-
-                -0.5f,  0.5f, -0.5f,   1.0f, 0.0f, 1.0f,
-                -0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 1.0f,
-                0.5f, -0.5f, -0.5f,   1.0f, 1.0f, 1.0f,
-                0.5f,  0.5f, -0.5f,   0.5f, 0.5f, 0.5f
-        };
-
-        int[] indices = {
-                0, 1, 2,
-                0, 2, 3,
-
-                3, 2, 6,
-                3, 6, 7,
-
-                7, 6, 5,
-                7, 5, 4,
-
-                4, 5, 1,
-                4, 1, 0,
-
-                4, 0, 3,
-                4, 3, 7,
-
-                1, 5, 6,
-                1, 6, 2
-        };
-
         program = ShaderProgram.fromFiles("shaders/vertex.glsl",  "shaders/fragment.glsl");
 
-        Mesh cube = new Mesh();
-        cube.upload(vertices, indices, program);
+        TextureAtlas atlas = new TextureAtlas("textures/minecraft_texture_atlas.png", 16);
+        atlas.addRegion("grass_top", 0, 0);
+        atlas.addRegion("grass_side", 1, 0);
+        atlas.addRegion("dirt", 2, 0);
+        atlas.addRegion("stone", 3, 0);
+
+        for (BlockType t : BlockType.values()) {
+            t.bindRegions(atlas);
+        }
 
         program.use();
 
         Chunk chunk = new Chunk();
-        System.out.println(chunk.get(5, 48, 5));
+        Mesh chunkMesh = ChunkMesher.build(chunk, program);
+
+        renderer = new Renderer();
 
         float ratio = WIDTH / (float) HEIGHT;
-        Matrix4f projection = new Matrix4f().perspective(Math.toRadians(45.0f), ratio, 0.1f, 1000f);
-
+        Matrix4f projection = new Matrix4f().perspective(Math.toRadians(45.0f), ratio, 0.1f, 1500f);
         program.setUniform(program.getUniformLocation("projection"), projection);
 
         while (!window.shouldClose()) {
@@ -120,20 +94,30 @@ public class Voxel {
             float deltaTime = (float) time - lastFrameTime;
             lastFrameTime = (float) time;
 
-            update(deltaTime);
+//            update(deltaTime);
             Input.update();
             processInput(deltaTime);
 
             camera.processMouseMovement((float) Input.getMouseDeltaX(), (float) Input.getMouseDeltaY(), false);
 
-            render(0);
+//            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+            renderer.clear(0.1f, 0.1f, 0.1f, 1.0f);
+
+//            render(0);
+            atlas.bind();
+            program.use();
+            program.setUniform(program.getUniformLocation("atlas"), 0);
+
+//            glDisable(GL_CULL_FACE);
+
+            renderer.render(chunkMesh, program, projection, camera.getViewMatrix(), new Matrix4f().translate(0f, -48, 0f));
 
             window.swap();
             window.poll();
         }
 
-        vao.delete();
-        vbo.delete();
+        chunkMesh.delete();
         program.delete();
 
         window.destroy();
