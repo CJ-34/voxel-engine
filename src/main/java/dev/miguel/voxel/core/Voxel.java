@@ -3,6 +3,8 @@ package dev.miguel.voxel.core;
 
 import dev.miguel.voxel.gfx.*;
 import dev.miguel.voxel.input.Input;
+import dev.miguel.voxel.world.BlockType;
+import dev.miguel.voxel.world.Chunk;
 import org.joml.Math;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
@@ -12,6 +14,7 @@ import static org.lwjgl.glfw.GLFW.*;
 
 import java.io.IOException;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 import static org.lwjgl.opengl.GL33.*;
 
@@ -36,14 +39,15 @@ public class Voxel {
     }
 
     public static void render(float alpha) {
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
         Matrix4f model = new Matrix4f().rotate(angle, 0f, 0f, 1f);
         Matrix4f view = camera.getViewMatrix();
         program.setUniform(program.getUniformLocation("model"), model);
         program.setUniform(program.getUniformLocation("view"), view);
 
-        glDrawArrays(GL_TRIANGLES, 0, 31);
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
     }
 
     public static void main(String[] args) throws IOException {
@@ -58,40 +62,53 @@ public class Voxel {
 
         Input.centerCursor();
 
+        glEnable(GL_DEPTH_TEST);
+
         VertexArrayObject vao = new VertexArrayObject();
         BufferObject vbo = new BufferObject();
+        BufferObject ebo = new BufferObject();
 
         float[] vertices = {
-            -0.6f, -0.4f, 0f, 1f, 0f, 0f,
-            0.6f, -0.4f, 0f, 1f, 0f, 0f,
-                0f, 0.6f, 0f, 0f, 0f, 1f
+                -0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 0.0f,
+                -0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 0.0f,
+                0.5f, -0.5f,  0.5f,   0.0f, 0.0f, 1.0f,
+                0.5f,  0.5f,  0.5f,   1.0f, 1.0f, 0.0f,
+
+                -0.5f,  0.5f, -0.5f,   1.0f, 0.0f, 1.0f,
+                -0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 1.0f,
+                0.5f, -0.5f, -0.5f,   1.0f, 1.0f, 1.0f,
+                0.5f,  0.5f, -0.5f,   0.5f, 0.5f, 0.5f
         };
-        FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(vertices.length);
-        vertexBuffer.put(vertices);
-        vertexBuffer.flip();
 
-        vao.bind();
-        vbo.bind(GL_ARRAY_BUFFER);
-        vbo.uploadData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
+        int[] indices = {
+                0, 1, 2,
+                0, 2, 3,
 
-        Shader vertex = Shader.loadFromFile(GL_VERTEX_SHADER, "shaders/vertex.glsl");
-        Shader fragment = Shader.loadFromFile(GL_FRAGMENT_SHADER, "shaders/fragment.glsl");
-        program = new ShaderProgram();
-        program.attachShader(vertex);
-        program.attachShader(fragment);
-        program.link();
+                3, 2, 6,
+                3, 6, 7,
+
+                7, 6, 5,
+                7, 5, 4,
+
+                4, 5, 1,
+                4, 1, 0,
+
+                4, 0, 3,
+                4, 3, 7,
+
+                1, 5, 6,
+                1, 6, 2
+        };
+
+        program = ShaderProgram.fromFiles("shaders/vertex.glsl",  "shaders/fragment.glsl");
+
+        Mesh cube = new Mesh();
+        cube.upload(vertices, indices, program);
 
         program.use();
 
-        int floatSize = Float.BYTES;
-
-        int posAttrib = program.getAttributeLocation("position");
-        program.pointVertexAttribute(posAttrib, 3, 6 * floatSize, 0);
-        program.enableVertexAttribute(posAttrib);
-
-        int colorAttrib = program.getAttributeLocation("color");
-        program.pointVertexAttribute(colorAttrib, 3, 6 * floatSize, 3 * floatSize);
-        program.enableVertexAttribute(colorAttrib);
+        Chunk chunk = new Chunk();
+        System.out.println(chunk.get(5, 48, 5));
 
         float ratio = WIDTH / (float) HEIGHT;
         Matrix4f projection = new Matrix4f().perspective(Math.toRadians(45.0f), ratio, 0.1f, 1000f);
@@ -117,8 +134,6 @@ public class Voxel {
 
         vao.delete();
         vbo.delete();
-        vertex.delete();
-        fragment.delete();
         program.delete();
 
         window.destroy();

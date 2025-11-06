@@ -86,4 +86,18 @@ public class ShaderProgram {
     public void delete() {
         glDeleteProgram(id);
     }
+
+    public static ShaderProgram fromFiles(String vertexPath, String fragPath) {
+        Shader vert = Shader.loadFromFile(GL_VERTEX_SHADER, vertexPath);
+        Shader frag = Shader.loadFromFile(GL_FRAGMENT_SHADER, fragPath);
+
+        ShaderProgram program = new ShaderProgram();
+        program.attachShader(vert);
+        program.attachShader(frag);
+        program.link();
+
+        vert.delete();
+        frag.delete();
+        return program;
+    }
 }
